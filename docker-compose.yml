@@ -1,0 +1,94 @@
+services:
+  postgres:
+    image:  timescale/timescaledb:latest-pg17
+    container_name: ${POSTGRES_CONTAINER_NAME}
+    restart: always
+    env_file:
+      - .env
+      - .env.local
+    networks:
+      - postgres_net
+    ports:
+      - "${POSTGRES_EXT_PORT}:${POSTGRES_INT_PORT}"
+    volumes:
+      - ./postgres/initdb:/docker-entrypoint-initdb.d
+      - postgres_data:/var/lib/postgresql/data
+      - ./backup:/backup
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER}", "-d", "${POSTGRES_DB}"]
+      interval: 5s
+      retries: 5
+  
+  watcher:
+    build:
+      context: ./watcher
+    container_name: watcher
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./backup/metabase:/backup
+    env_file:
+      - .env
+      - .env.local
+    command: ["/bin/sh", "-c", "sleep 15 && /entrypoint.sh"]
+    depends_on:
+      - postgres
+    restart: always
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: ${PGADMIN_CONTAINER_NAME}
+    restart: always
+    env_file:
+      - .env
+      - .env.local
+    ports:
+      - "${PGADMIN_EXT_PORT}:${PGADMIN_INT_PORT}"
+    user: root
+    entrypoint: /bin/sh -c "chmod 600 /pgadmin4/pgpass; /entrypoint.sh;"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+      - ./backup:/var/lib/pgadmin/storage
+      - ./pgadmin/servers.json:/pgadmin4/servers.json
+      - ./pgadmin/pgpass:/pgadmin4/pgpass
+    networks:
+      postgres_net:
+    depends_on:
+      - postgres
+
+  metabase:
+    image: metabase/metabase:latest
+    container_name: ${METABASE_CONTAINER_NAME}
+    ports:
+      - "${METABASE_EXT_PORT}:${METABASE_INT_PORT}"
+    env_file:
+      - .env
+      - .env.local
+    networks:
+      - postgres_net
+    healthcheck:
+      test: curl --fail -I http://localhost:${METABASE_INT_PORT}/api/health || exit 1
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    depends_on:
+      - postgres
+
+  mqtt:
+    build: ./
+    container_name: ${MQTT_CONTAINER_NAME}
+    depends_on:
+      - postgres
+    env_file:
+      - .env
+      - .env.local
+    networks:
+      - postgres_net
+      
+networks:
+  postgres_net:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  pgadmin_data:
+  metabase_data: 

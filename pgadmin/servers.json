@@ -1,0 +1,15 @@
+{
+  "Servers": {
+    "1": {
+        "Group": "H2Optimize",
+        "Name": "Development",
+        "Host": "postgres",
+        "Port": 5432,
+        "MaintenanceDB": "postgres",
+        "Username": "admin", 
+        "SSLMode": "prefer",
+        "Favorite": true,
+        "PassFile": "/pgadmin4/pgpass"
+    }
+  }
+}
