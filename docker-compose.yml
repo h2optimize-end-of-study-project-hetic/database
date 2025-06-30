@@ -19,20 +19,20 @@ services:
       interval: 5s
       retries: 5
   
-  watcher:
-    build:
-      context: ./watcher
-    container_name: watcher
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ./backup/metabase:/backup
-    env_file:
-      - .env
-      - .env.local
-    command: ["/bin/sh", "-c", "sleep 15 && /entrypoint.sh"]
-    depends_on:
-      - postgres
-    restart: always
+  # watcher:
+  #   build:
+  #     context: ./watcher
+  #   container_name: watcher
+  #   volumes:
+  #     - /var/run/docker.sock:/var/run/docker.sock
+  #     - ./backup/metabase:/backup
+  #   env_file:
+  #     - .env
+  #     - .env.local
+  #   command: ["/bin/sh", "-c", "sleep 15 && /entrypoint.sh"]
+  #   depends_on:
+  #     - postgres
+  #   restart: always
 
   pgadmin:
     image: dpage/pgadmin4
