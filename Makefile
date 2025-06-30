@@ -21,6 +21,11 @@ clean:
 cleanall: 
 	docker compose -v down
 
+startdwithoutmqtt:
+	docker compose --env-file $(ENV_FILE) --env-file $(ENV_LOCAL_FILE) up --build -d postgres pgadmin metabase watcher
+	$(MAKE) logs
+
+	
 startd :
 	$(MAKE) buildd
 	$(MAKE) logs

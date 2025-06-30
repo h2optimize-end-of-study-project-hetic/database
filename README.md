@@ -53,6 +53,10 @@ En cas de changement des variable d'environnment modifier `/pgadmin/servers.json
 
 `docker compose --env-file $(ENV_FILE) --env-file $(ENV_LOCAL_FILE) up --build pgadmin`
 
+#### Connexion 
+
+![Mot de passe maitre pgAdmin](./doc/image/master_pwd_pgadmin.png)
+
 ---
 
 ### BI
