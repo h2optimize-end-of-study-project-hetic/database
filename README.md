@@ -13,7 +13,34 @@ TODO
 
 ![schéma](./doc/image/schema.png)
 
-## Instalation
+## Installation
+
+### ⚠️ Troubleshooting – Erreur `/entrypoint.sh: not found` dans le contaioner watcher sous Windows
+
+**Erreur**
+
+```
+/bin/sh: /entrypoint.sh: not found
+```
+
+**Origine**
+
+> Incompatibilité des **séquences de fin de ligne** entre Windows et Linux.
+
+Convention différente en focntion des OS pour terminer les lignes dans les fichiers texte :
+
+| Système         | Séquence de fin de ligne | Représentation |
+|-----------------|--------------------------|----------------|
+| **Windows**     | `CRLF`                   | `\r\n`         |
+| **Linux/macOS** | `LF`                     | `\n`           |
+
+**Solution**
+
+Convertir le fichier en `LF` avec VSCode
+![Fin de ligne VSCode](./doc/image/sequence_end_line.png)
+
+
+### Sans data des capteurs
 
 Créer un fichier **/.env.local**
 > Défaut le fichier vide (et c'est OK)
@@ -21,6 +48,79 @@ Créer un fichier **/.env.local**
 ```bash
 make startd
 ```
+
+### Avec data des capteurs
+
+Objectif: Restore une backup de la base puis percister les données venant du broker mqtt
+
+Créer un fichier **/.env.local**
+> Défaut le fichier vide (et c'est OK)
+
+```bash
+make startdwithoutmqtt
+```
+
+Restorer `backup\restore_recorded.sql` dans la base de donné recorded via postgres ou pgAdmin 
+
+```bash
+make startd
+```
+
+### Instalation réussie quand : 
+1. les onteneurs: postgres, metabase, watcher, pgadmin, mqtt Run dans docker
+2. Dans PostgreSQL 
+
+```postgres
+postgres=# \l
+>> List of databases
+
+   Name    | Owner | Encoding | Locale Provider |  Collate   |   Ctype    | Locale | ICU Rules | Access privileges 
+-----------+-------+----------+-----------------+------------+------------+--------+-----------+------------------
+ app       | admin | UTF8     | libc            | en_US.utf8 | en_US.utf8 |        |           | 
+ metabase  | admin | UTF8     | libc            | en_US.utf8 | en_US.utf8 |        |           | 
+ recorded  | admin | UTF8     | libc            | en_US.utf8 | en_US.utf8 |        |           |
+```
+```postgres
+app=# \dt
+                  List of relations
+ Schema |            Name            | Type  | Owner 
+--------+----------------------------+-------+-------
+ public | building                   | table | admin
+ public | classroom                  | table | admin
+ public | classroom_sensor           | table | admin
+ public | classroom_sensor_classroom | table | admin
+ public | classroom_sensor_sensor    | table | admin
+ public | course                     | table | admin
+ public | course_classroom           | table | admin
+ public | promotion                  | table | admin
+ public | sensor                     | table | admin
+ public | user                       | table | admin
+ public | user_promotion             | table | admin
+```
+```postgres
+metabase=# \dt
+                       List of relations
+ Schema |                 Name                 | Type  | Owner 
+--------+--------------------------------------+-------+-------
+ public | action                               | table | admin
+...
+```
+
+```postgres
+recorded=# \dt
+                List of relations
+ Schema |          Name           | Type  | Owner 
+--------+-------------------------+-------+-------
+ public | sensor_humidity         | table | admin
+ public | sensor_motion           | table | admin
+ public | sensor_neighbors_count  | table | admin
+ public | sensor_neighbors_detail | table | admin
+ public | sensor_pressure         | table | admin
+ public | sensor_temperature      | table | admin
+ public | sensor_voltage          | table | admin
+```
+3. pgAdmin est accessible et est connecté aux base de données
+4. Metabase est accéssible, pas de configuration demander, page de connexion
 
 ## Services 
 
@@ -61,7 +161,9 @@ En cas de changement des variable d'environnment modifier `/pgadmin/servers.json
 
 ### BI
 
-- Metabase 
+Solution : **Metabase**
+Interface : [http://localhost:3000/](http://localhost:3000/)
+
 
 #### Taux d'humidité en temps réel par capteur
 
