@@ -50,3 +50,8 @@ startpga :
 startmqtt :
 	docker compose down mqtt
 	docker compose up --build mqtt
+
+
+starttelegraf :
+	docker compose --env-file $(ENV_FILE) --env-file $(ENV_LOCAL_FILE) up --build telegraf
+

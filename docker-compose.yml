@@ -1,7 +1,7 @@
 services:
   postgres:
     image:  timescale/timescaledb:latest-pg17
-    container_name: ${POSTGRES_CONTAINER_NAME}
+    container_name: ${POSTGRES_CONTAINER_NAME:-postgres}
     restart: always
     env_file:
       - .env
@@ -9,7 +9,7 @@ services:
     networks:
       - postgres_net
     ports:
-      - "${POSTGRES_EXT_PORT}:${POSTGRES_INT_PORT}"
+      - "${POSTGRES_EXT_PORT}:5432"
     volumes:
       - ./postgres/initdb:/docker-entrypoint-initdb.d
       - postgres_data:/var/lib/postgresql/data
@@ -20,10 +20,10 @@ services:
       retries: 5
   
   watcher:
+    container_name: ${WATCHER_CONTAINER_NAME:-watcher}
     build:
       context: ./watcher
       dockerfile: Dockerfile
-    container_name: watcher
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./backup/metabase:/backup
@@ -37,13 +37,13 @@ services:
 
   pgadmin:
     image: dpage/pgadmin4
-    container_name: ${PGADMIN_CONTAINER_NAME}
+    container_name: ${PGADMIN_CONTAINER_NAME:-pgamdin}
     restart: always
     env_file:
       - .env
       - .env.local
     ports:
-      - "${PGADMIN_EXT_PORT}:${PGADMIN_INT_PORT}"
+      - "${PGADMIN_EXT_PORT:-80}:80"
     user: root
     entrypoint: /bin/sh -c "chmod 600 /pgadmin4/pgpass; /entrypoint.sh;"
     volumes:
@@ -57,8 +57,8 @@ services:
       - postgres
 
   metabase:
-    image: metabase/metabase:latest
     container_name: ${METABASE_CONTAINER_NAME}
+    image: metabase/metabase:latest
     ports:
       - "${METABASE_EXT_PORT}:${METABASE_INT_PORT}"
     env_file:
@@ -74,17 +74,34 @@ services:
     depends_on:
       - postgres
 
-  mqtt:
-    build: ./
-    container_name: ${MQTT_CONTAINER_NAME}
-    depends_on:
-      - postgres
+  telegraf:
+    image: telegraf:1.35
+    container_name: ${TELEGRAF_CONTAINER_NAME:-telegraf}
+    restart: unless-stopped
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_RECORD_DB: ${POSTGRES_RECORD_DB:-recorded}
+      MQTT_HOST: ${MQTT_HOST:-176.186.143.117}
+      MQTT_PORT: ${MQTT_PORT:-8828}
+      MQTT_TOPIC: ${MQTT_TOPIC:-pws-packet/#}
     env_file:
       - .env
       - .env.local
+    volumes:
+      - ./telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
     networks:
       - postgres_net
-      
+    healthcheck:
+      test: ["CMD", "telegraf", "--test"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
 networks:
   postgres_net:
     driver: bridge

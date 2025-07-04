@@ -2,16 +2,15 @@
 
 TODO 
 - ameliorer le connecteur 
-  - augmenter résilience
-  - passer avec une extenesion pg 
-  - node red
-  
-- argumentrer les choix technique 
-
+  - telegraf
+    - Trigger sur relevance
+    - non regression dans metabase
 
 [Escalidraw](https://excalidraw.com/?element=Ahl934wJmsXP_2y54ac9F#room=ff9fff0b0e37ded1e609,w3P887LL-U-rrDN3qX64AA)
 
-![schéma](./doc/image/schema.png)
+
+![schéma](./doc/image/schema04072025.png)
+
 
 ## Installation
 
@@ -118,6 +117,7 @@ recorded=# \dt
  public | sensor_pressure         | table | admin
  public | sensor_temperature      | table | admin
  public | sensor_voltage          | table | admin
+ public | sensor_button           | table | admin
 ```
 3. pgAdmin est accessible et est connecté aux base de données
 4. Metabase est accéssible, pas de configuration demander, page de connexion
@@ -138,6 +138,7 @@ Note : Pas d'optimisation, vérifier la version et les dépendance
 ### Client PostgreSQL 
 
 Solution : *pgAmdin** 
+Version : dpage/pgadmin4
 Interface : [http://localhost:8080/](http://localhost:8080/)
 
 Note :
@@ -210,8 +211,9 @@ Commenter le service dans docker-compose.yml
 
 Lancer manuellement une backup :
 
-`/entrypoint.sh manual-backup`
-
+```
+/entrypoint.sh manual-backup
+```
 ---
 
 #### Température en temps réel par capteur
@@ -225,7 +227,7 @@ FROM
   public.sensor_temperature
 WHERE
   {{id_capteur}}
-  [[ AND {{date}} ]]
+  [[ AND {{date}} ]]  [[ {{date}} ]]
 GROUP BY
   time_bucket,
   sensor_temperature.temperature,
@@ -240,6 +242,9 @@ date : filtre de champ lié à 'time'
 
 ### connecteur  mqtt python
 
+`/mqtt` Service initial basé sur un script python
+`/telegraf` Service telegraf 
+
 ---
 
 ## Aide 
@@ -252,6 +257,11 @@ psql -U admin -d postgres
 
 -- Voir les base de données
 \l
+
+-- Backup de recorded 
+pg_dump -U admin -d recorded --format=plain --file=/backup/recorded_backup_30062025.sql
+
+pg_dump: hint: You might not be able to restore the dump without using --disable-triggers or temporarily dropping the constraints.
 ```
 
 #### Extraction des données des capteurs enregistrer dans app pour les mettres dans une nouvelle base de donnée, Recorded 
@@ -272,7 +282,6 @@ pg_dump -U admin -d app \
   --exclude-table=classroom_sensor_classroom \
   --exclude-table=course_classroom
 ```
-
 ---
 
 
@@ -341,30 +350,3 @@ MB_SETUP_DATABASE_USERNAME=${POSTGRES_USER}
 MB_SETUP_DATABASE_PASSWORD=${POSTGRES_PASSWORD}
 
 ```
-
-
-
-
-
-
-
-<!-- 
-  # postgres:
-  #   image: postgres:17.2-alpine3.21
-  #   container_name: ${POSTGRES_CONTAINER_NAME}
-  #   restart: always
-  #   env_file:
-  #     - .env
-  #     - .env.local
-  #   networks:
-  #     - postgres_net
-  #   ports:
-  #     - "${POSTGRES_EXT_PORT}:5432"
-  #   volumes:
-  #     - ./:/docker-entrypoint-initdb.d
-  #     - postgres_data:/var/lib/postgresql/data
-  #     - ./backup:/backup
-  #   healthcheck:
-  #     test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER}", "-d", "${POSTGRES_DB}"]
-  #     interval: 5s
-  #     retries: 5 -->
