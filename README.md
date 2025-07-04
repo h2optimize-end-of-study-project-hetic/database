@@ -1,11 +1,5 @@
 # H2Optimize - Database 
 
-TODO 
-- ameliorer le connecteur 
-  - telegraf
-    - Trigger sur relevance
-    - non regression dans metabase
-
 [Escalidraw](https://excalidraw.com/?element=Ahl934wJmsXP_2y54ac9F#room=ff9fff0b0e37ded1e609,w3P887LL-U-rrDN3qX64AA)
 
 
