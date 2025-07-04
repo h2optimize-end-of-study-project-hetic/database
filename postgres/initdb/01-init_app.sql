@@ -39,7 +39,9 @@ CREATE TABLE "building" (
   "name" varchar,
   "updated_at" timestamp,
   "created_at" timestamp,
-  "classroom_number" int
+  "classroom_number" integer,
+  "width" integer,
+  "length" integer
 );
 
 CREATE TABLE "classroom" (
@@ -48,6 +50,7 @@ CREATE TABLE "classroom" (
   "name" varchar,
   "floor" int,
   "capacity" int,
+  "shape" JSONB DEFAULT NULL, 
   "area" float,
   "updated_at" timestamp,
   "created_at" timestamp,
@@ -156,14 +159,14 @@ VALUES
 ('technician', 'Diane', 'Lopez', 'pwd4', '0622222222', 'diane@ex.com', now(), now(), 'salt4', 'secret4');
 
 -- Bâtiments
-INSERT INTO "building" (name, created_at, updated_at, classroom_number)
-VALUES ('Building A', now(), now(), 2);
+INSERT INTO "building" (name, created_at, updated_at, classroom_number, width, length)
+VALUES ('Building A', now(), now(), 2, 512, 512);
 
 -- Salles
-INSERT INTO "classroom" (id_building, name, floor, capacity, area, created_at, updated_at, start_at)
+INSERT INTO "classroom" (id_building, name, floor, capacity, area, shape, created_at, updated_at, start_at)
 VALUES 
-(1, 'Room 101', 1, 30, 40.0, now(), now(), now()),
-(1, 'Room 102', 1, 25, 35.0, now(), now(), now());
+(1, 'Room 101', 1, 30, 40.0, '[[2385, 2124.9], [2430, 2522.83],[2174, 2522.83],[2141, 2147.9]]', now(), now(), now()),
+(1, 'Room 102', 1, 25, 35.0, '[[50, 50], [50, 150], [150, 150],[150, 50]]', now(), now(), now());
 
 -- Promotions
 INSERT INTO "promotion" (name, student_nb, created_at, updated_at, start_at)
