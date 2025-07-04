@@ -1,8 +1,5 @@
 # H2Optimize - Database 
 
-[Escalidraw](https://excalidraw.com/?element=Ahl934wJmsXP_2y54ac9F#room=ff9fff0b0e37ded1e609,w3P887LL-U-rrDN3qX64AA)
-
-
 ![schéma](./doc/image/schema04072025.png)
 
 
