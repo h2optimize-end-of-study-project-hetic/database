@@ -2,6 +2,7 @@
 
 ![schéma](./doc/image/schema04072025.png)
 
+![shéma de app](./doc/image/db_shema_app.png)
 
 ## Installation
 
@@ -254,6 +255,7 @@ pg_dump -U admin -d recorded --format=plain --file=/backup/recorded_backup_30062
 
 pg_dump: hint: You might not be able to restore the dump without using --disable-triggers or temporarily dropping the constraints.
 ```
+
 
 #### Extraction des données des capteurs enregistrer dans app pour les mettres dans une nouvelle base de donnée, Recorded 
 

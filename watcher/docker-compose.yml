@@ -1,0 +1,37 @@
+services:  
+  watcher:
+    container_name: ${WATCHER_CONTAINER_NAME:-watcher1}
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./backup/metabase:/backup
+    env_file:
+      - ../.env
+      - ../.env.local
+    command: ["/bin/sh", "-c", "sleep 15 && /entrypoint.sh"]
+    restart: always
+
+  metabase:
+    container_name: ${METABASE_CONTAINER_NAME:-matabase1}
+    image: metabase/metabase:latest
+    ports:
+      - "${METABASE_EXT_PORT:-3000}:3000"
+    env_file:
+      - ../.env
+      - ../.env.local
+    networks:
+      - postgres_network
+    healthcheck:
+      test: curl --fail -I http://localhost:3000/api/health || exit 1
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+networks:
+  postgres_network:
+    external: true
+
+volumes:
+  metabase_data: 

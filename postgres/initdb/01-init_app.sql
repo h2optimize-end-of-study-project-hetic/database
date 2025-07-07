@@ -4,204 +4,256 @@
 -- ENUM rôle utilisateur
 DO $$
 BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'role') THEN
-        CREATE TYPE role AS ENUM ('admin', 'staff', 'technician', 'intern', 'guest');
-    END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'role') THEN
+    CREATE TYPE role AS ENUM ('admin', 'staff', 'technician', 'intern', 'guest');
+  END IF;
 END $$;
 
--- Fonction de mise à jour automatique du champ updated_at
-CREATE OR REPLACE FUNCTION update_updated_at_column()
+CREATE OR REPLACE FUNCTION set_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
-   NEW.updated_at = now();
-   RETURN NEW;
+  NEW.updated_at = NOW();
+  RETURN NEW;
 END;
-$$ language 'plpgsql';
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION update_room_count()
+RETURNS TRIGGER AS $$
+BEGIN
+  UPDATE building
+  SET room_count = (
+    SELECT COUNT(*) FROM room WHERE building_id = NEW.building_id
+  )
+  WHERE id = NEW.building_id;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION auto_finish_event_room()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.end_at < NOW() THEN
+    NEW.is_finished := TRUE;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION set_deleted_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.is_deleted = TRUE AND OLD.is_deleted = FALSE THEN
+    NEW.deleted_at := NOW();
+  ELSIF NEW.is_deleted = FALSE THEN
+    NEW.deleted_at := NULL;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
 
 -- === TABLES ===
 
 CREATE TABLE "user" (
-  "id" SERIAL PRIMARY KEY,
-  "role" role,
-  "firstname" varchar,
-  "lastname" varchar,
-  "password" varchar,
-  "telephone" varchar UNIQUE,
-  "email" varchar UNIQUE,
-  "updated_at" timestamp,
-  "created_at" timestamp,
-  "salt" varchar,
-  "secret_2fa" varchar
+  "id"                  SERIAL PRIMARY KEY,
+  "email"               TEXT UNIQUE NOT NULL,
+  "salt"                TEXT NOT NULL,
+  "password"            TEXT NOT NULL,
+  "secret_2fa"          TEXT,
+  "role"                role,
+  "firstname"           TEXT NOT NULL,
+  "lastname"            TEXT NOT NULL,
+  "phone_number"        TEXT,
+  "is_active"           BOOLEAN DEFAULT TRUE,
+  "is_deleted"          BOOLEAN DEFAULT FALSE,
+  "created_at"          TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  "updated_at"          TIMESTAMPTZ,
+  "deleted_at"          TIMESTAMPTZ
 );
 
 CREATE TABLE "building" (
-  "id" SERIAL PRIMARY KEY,
-  "name" varchar,
-  "updated_at" timestamp,
-  "created_at" timestamp,
-  "classroom_number" integer,
-  "width" integer,
-  "length" integer
+  "id"                  SERIAL PRIMARY KEY,
+  "name"                TEXT,
+  "description"         TEXT,
+  "room_count"          INTEGER,
+  "created_at"          TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  "updated_at"          TIMESTAMPTZ
 );
 
-CREATE TABLE "classroom" (
-  "id" SERIAL PRIMARY KEY,
-  "id_building" integer,
-  "name" varchar,
-  "floor" int,
-  "capacity" int,
-  "shape" JSONB DEFAULT NULL, 
-  "area" float,
-  "updated_at" timestamp,
-  "created_at" timestamp,
-  "start_at" timestamp,
-  "end_at" timestamp,
-  FOREIGN KEY ("id_building") REFERENCES "building" ("id")
+CREATE TABLE "map" (
+  "id"                  SERIAL PRIMARY KEY,
+  "building_id"         INTEGER,
+  "file_name"           TEXT,
+  "path"                TEXT,
+  "width"               INTEGER,
+  "length"              INTEGER,
+  "created_at"          TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  "updated_at"          TIMESTAMPTZ,
+  FOREIGN KEY ("building_id") REFERENCES "building" ("id")
 );
 
-CREATE TABLE "promotion" (
-  "id" SERIAL PRIMARY KEY,
-  "name" varchar,
-  "student_nb" int,
-  "updated_at" timestamp,
-  "created_at" timestamp,
-  "start_at" timestamp,
-  "end_at" timestamp
+CREATE TABLE "room" (
+  "id"                  SERIAL PRIMARY KEY,
+  "name"                TEXT,
+  "description"         TEXT,
+  "floor"               INTEGER,
+  "building_id"         INTEGER,
+  "area"                FLOAT,
+  "shape"               JSONB, 
+  "capacity"            INTEGER,
+  "start_at"            TIMESTAMPTZ,
+  "end_at"              TIMESTAMPTZ,
+  "created_at"          TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  "updated_at"          TIMESTAMPTZ,
+  CHECK (end_at IS NULL OR start_at IS NULL OR end_at > start_at),
+  FOREIGN KEY ("building_id") REFERENCES "building" ("id")
 );
 
-CREATE TABLE "course" (
-  "id" SERIAL PRIMARY KEY,
-  "id_promotion" integer,
-  "id_classroom" integer,
-  "name" varchar,
-  "teacher" varchar,
-  "start_at" timestamp,
-  "end_at" timestamp,
-  "updated_at" timestamp,
-  "created_at" timestamp,
-  FOREIGN KEY ("id_promotion") REFERENCES "promotion" ("id"),
-  FOREIGN KEY ("id_classroom") REFERENCES "classroom" ("id")
+CREATE TABLE "group" (
+  "id"                  SERIAL PRIMARY KEY,
+  "name"                TEXT,
+  "description"         TEXT,
+  "member_count"        INTEGER,
+  "start_at"            TIMESTAMPTZ,
+  "end_at"              TIMESTAMPTZ,
+  "created_at"          TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  "updated_at"          TIMESTAMPTZ,
+  CHECK (end_at IS NULL OR start_at IS NULL OR end_at > start_at)
 );
 
-CREATE TABLE "sensor" (
-  "id" SERIAL PRIMARY KEY,
-  "serial_number" varchar UNIQUE,
-  "id_classroom" integer,
-  "updated_at" timestamp,
-  "created_at" timestamp,
-  FOREIGN KEY ("id_classroom") REFERENCES "classroom" ("id")
+CREATE TABLE "event" (
+  "id"                  SERIAL PRIMARY KEY,
+  "name"                TEXT,
+  "description"         TEXT,
+  "group_id"            INTEGER,
+  "supervisor"          TEXT, -- anciennment teacher
+  "created_at"          TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  "updated_at"          TIMESTAMPTZ,
+  FOREIGN KEY ("group_id") REFERENCES "group" ("id")
 );
 
-CREATE TABLE "classroom_sensor" (
-  "id" SERIAL PRIMARY KEY,
-  "id_sensor" integer,
-  "id_classroom" integer,
-  "start_at" timestamp,
-  "end_at" timestamp,
-  "updated_at" timestamp,
-  "created_at" timestamp,
-  FOREIGN KEY ("id_sensor") REFERENCES "sensor" ("id"),
-  FOREIGN KEY ("id_classroom") REFERENCES "classroom" ("id")
+CREATE TABLE "tag" (
+  "id"                  SERIAL PRIMARY KEY,
+  "name"                TEXT,
+  "source_address"      TEXT UNIQUE,
+  "created_at"          TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  "updated_at"          TIMESTAMPTZ
 );
 
-CREATE TABLE "user_promotion" (
-  "id_user" integer,
-  "id_promotion" integer,
-  "updated_at" timestamp,
-  "created_at" timestamp,
-  PRIMARY KEY ("id_user", "id_promotion"),
-  FOREIGN KEY ("id_user") REFERENCES "user" ("id"),
-  FOREIGN KEY ("id_promotion") REFERENCES "promotion" ("id")
+CREATE TABLE "room_tag" (
+  "id"                  SERIAL PRIMARY KEY,
+  "tag_id"              INTEGER,
+  "room_id"             INTEGER,
+  "start_at"            TIMESTAMPTZ,
+  "end_at"              TIMESTAMPTZ,
+  "created_at"          TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  "updated_at"          TIMESTAMPTZ,
+  CHECK (end_at IS NULL OR start_at IS NULL OR end_at > start_at),
+  FOREIGN KEY ("tag_id") REFERENCES "tag" ("id"),
+  FOREIGN KEY ("room_id") REFERENCES "room" ("id")
 );
 
-CREATE TABLE "classroom_sensor_sensor" (
-  "classroom_sensor_id" integer,
-  "sensor_id" integer,
-  PRIMARY KEY ("classroom_sensor_id", "sensor_id"),
-  FOREIGN KEY ("classroom_sensor_id") REFERENCES "classroom_sensor" ("id"),
-  FOREIGN KEY ("sensor_id") REFERENCES "sensor" ("id")
+CREATE TABLE "event_room" (
+  "id"                  SERIAL PRIMARY KEY,
+  "room_id"             INTEGER,
+  "event_id"            INTEGER,
+  "is_finished"         BOOLEAN DEFAULT FALSE,
+  "start_at"            TIMESTAMPTZ,
+  "end_at"              TIMESTAMPTZ,
+  "created_at"          TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  "updated_at"          TIMESTAMPTZ,
+  UNIQUE (event_id, room_id, start_at, end_at),
+  CHECK (end_at IS NULL OR start_at IS NULL OR end_at > start_at),
+  FOREIGN KEY ("event_id") REFERENCES "event" ("id"),
+  FOREIGN KEY ("room_id") REFERENCES "room" ("id")
 );
 
-CREATE TABLE "classroom_sensor_classroom" (
-  "classroom_sensor_id" integer,
-  "classroom_id" integer,
-  PRIMARY KEY ("classroom_sensor_id", "classroom_id"),
-  FOREIGN KEY ("classroom_sensor_id") REFERENCES "classroom_sensor" ("id"),
-  FOREIGN KEY ("classroom_id") REFERENCES "classroom" ("id")
-);
-
-CREATE TABLE "course_classroom" (
-  "course_id_classroom" integer,
-  "classroom_id" integer,
-  PRIMARY KEY ("course_id_classroom", "classroom_id"),
-  FOREIGN KEY ("course_id_classroom") REFERENCES "course" ("id"),
-  FOREIGN KEY ("classroom_id") REFERENCES "classroom" ("id")
+CREATE TABLE "user_group" (
+  "group_id"            INTEGER,
+  "user_id"             INTEGER,
+  "created_at"          TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  "updated_at"          TIMESTAMPTZ,
+  PRIMARY KEY (group_id, user_id),
+  FOREIGN KEY ("group_id") REFERENCES "group" ("id"),
+  FOREIGN KEY ("user_id") REFERENCES "user" ("id")
 );
 
 -- === TRIGGERS ===
-CREATE TRIGGER trg_user_updated BEFORE UPDATE ON "user" FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER trg_building_updated BEFORE UPDATE ON "building" FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER trg_classroom_updated BEFORE UPDATE ON "classroom" FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER trg_promotion_updated BEFORE UPDATE ON "promotion" FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER trg_course_updated BEFORE UPDATE ON "course" FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER trg_sensor_updated BEFORE UPDATE ON "sensor" FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER trg_classroom_sensor_updated BEFORE UPDATE ON "classroom_sensor" FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER trg_user_promotion_updated BEFORE UPDATE ON "user_promotion" FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER trg_user_updated_at
+BEFORE UPDATE ON "user"
+FOR EACH ROW
+EXECUTE FUNCTION set_updated_at();
 
--- === DONNÉES D'EXEMPLE ===
+CREATE TRIGGER trg_building_updated_at
+BEFORE UPDATE ON "building"
+FOR EACH ROW
+EXECUTE FUNCTION set_updated_at();
 
--- Utilisateurs
-INSERT INTO "user" (role, firstname, lastname, password, telephone, email, created_at, updated_at, salt, secret_2fa)
-VALUES 
-('admin', 'Alice', 'Durand', 'pwd1', '0102030405', 'alice@ex.com', now(), now(), 'salt1', 'secret1'),
-('staff', 'Bob', 'Martin', 'pwd2', '0607080910', 'bob@ex.com', now(), now(), 'salt2', 'secret2'),
-('guest', 'Charlie', 'Petit', 'pwd3', '0611111111', 'charlie@ex.com', now(), now(), 'salt3', 'secret3'),
-('technician', 'Diane', 'Lopez', 'pwd4', '0622222222', 'diane@ex.com', now(), now(), 'salt4', 'secret4');
+CREATE TRIGGER trg_map_updated_at
+BEFORE UPDATE ON "map"
+FOR EACH ROW
+EXECUTE FUNCTION set_updated_at();
 
--- Bâtiments
-INSERT INTO "building" (name, created_at, updated_at, classroom_number, width, length)
-VALUES ('Building A', now(), now(), 2, 512, 512);
+CREATE TRIGGER trg_room_updated_at
+BEFORE UPDATE ON "room"
+FOR EACH ROW
+EXECUTE FUNCTION set_updated_at();
 
--- Salles
-INSERT INTO "classroom" (id_building, name, floor, capacity, area, shape, created_at, updated_at, start_at)
-VALUES 
-(1, 'Room 101', 1, 30, 40.0, '[[2385, 2124.9], [2430, 2522.83],[2174, 2522.83],[2141, 2147.9]]', now(), now(), now()),
-(1, 'Room 102', 1, 25, 35.0, '[[50, 50], [50, 150], [150, 150],[150, 50]]', now(), now(), now());
+CREATE TRIGGER trg_group_updated_at
+BEFORE UPDATE ON "group"
+FOR EACH ROW
+EXECUTE FUNCTION set_updated_at();
 
--- Promotions
-INSERT INTO "promotion" (name, student_nb, created_at, updated_at, start_at)
-VALUES ('Promo 2025', 60, now(), now(), now());
+CREATE TRIGGER trg_user_group_updated_at
+BEFORE UPDATE ON "user_group"
+FOR EACH ROW
+EXECUTE FUNCTION set_updated_at();
 
--- Cours
-INSERT INTO "course" (id_promotion, id_classroom, name, teacher, start_at, end_at, created_at, updated_at)
-VALUES (1, 1, 'Maths', 'Mr. Jean', now(), now() + interval '1 hour', now(), now());
+CREATE TRIGGER trg_event_updated_at
+BEFORE UPDATE ON "event"
+FOR EACH ROW
+EXECUTE FUNCTION set_updated_at();
 
--- Capteurs
-INSERT INTO "sensor" (serial_number, id_classroom, created_at, updated_at)
-VALUES 
-('SN001', 1, now(), now()),
-('SN002', 2, now(), now());
+CREATE TRIGGER trg_tag_updated_at
+BEFORE UPDATE ON "tag"
+FOR EACH ROW
+EXECUTE FUNCTION set_updated_at();
 
--- Lien capteur/salle
-INSERT INTO "classroom_sensor" (id_sensor, id_classroom, start_at, created_at, updated_at)
-VALUES 
-(1, 1, now(), now(), now()),
-(2, 2, now(), now(), now());
+CREATE TRIGGER trg_room_tag_updated_at
+BEFORE UPDATE ON "room_tag"
+FOR EACH ROW
+EXECUTE FUNCTION set_updated_at();
 
--- Lien sensor <-> classroom_sensor
-INSERT INTO "classroom_sensor_sensor" (classroom_sensor_id, sensor_id)
-VALUES (1, 1), (2, 2);
+CREATE TRIGGER trg_event_room_updated_at
+BEFORE UPDATE ON "event_room"
+FOR EACH ROW
+EXECUTE FUNCTION set_updated_at();
 
--- Lien classroom <-> classroom_sensor
-INSERT INTO "classroom_sensor_classroom" (classroom_sensor_id, classroom_id)
-VALUES (1, 1), (2, 2);
+-- Room count 
+CREATE TRIGGER trg_room_after_insert
+AFTER INSERT ON room
+FOR EACH ROW
+EXECUTE FUNCTION update_room_count();
 
--- Lien user <-> promotion
-INSERT INTO "user_promotion" (id_user, id_promotion, created_at, updated_at)
-VALUES (1, 1, now(), now()), (2, 1, now(), now());
+CREATE TRIGGER trg_room_after_delete
+AFTER DELETE ON room
+FOR EACH ROW
+EXECUTE FUNCTION update_room_count();
 
--- Lien course <-> classroom
-INSERT INTO "course_classroom" (course_id_classroom, classroom_id)
-VALUES (1, 1);
+CREATE TRIGGER trg_room_after_update
+AFTER UPDATE ON room
+FOR EACH ROW
+WHEN (OLD.building_id IS DISTINCT FROM NEW.building_id)
+EXECUTE FUNCTION update_room_count();
 
+-- is finished
+CREATE TRIGGER trg_auto_finish_event_room
+BEFORE INSERT OR UPDATE ON event_room
+FOR EACH ROW
+EXECUTE FUNCTION auto_finish_event_room();
 
+-- deleted at 
+CREATE TRIGGER trg_user_soft_delete
+BEFORE UPDATE ON "user"
+FOR EACH ROW
+EXECUTE FUNCTION set_deleted_at();

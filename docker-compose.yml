@@ -18,22 +18,6 @@ services:
       test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER}", "-d", "${POSTGRES_DB}"]
       interval: 5s
       retries: 5
-  
-  watcher:
-    container_name: ${WATCHER_CONTAINER_NAME:-watcher}
-    build:
-      context: ./watcher
-      dockerfile: Dockerfile
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ./backup/metabase:/backup
-    env_file:
-      - .env
-      - .env.local
-    command: ["/bin/sh", "-c", "sleep 15 && /entrypoint.sh"]
-    depends_on:
-      - postgres
-    restart: always
 
   pgadmin:
     image: dpage/pgadmin4
@@ -53,24 +37,6 @@ services:
       - ./pgadmin/pgpass:/pgadmin4/pgpass
     networks:
       postgres_net:
-    depends_on:
-      - postgres
-
-  metabase:
-    container_name: ${METABASE_CONTAINER_NAME}
-    image: metabase/metabase:latest
-    ports:
-      - "${METABASE_EXT_PORT}:${METABASE_INT_PORT}"
-    env_file:
-      - .env
-      - .env.local
-    networks:
-      - postgres_net
-    healthcheck:
-      test: curl --fail -I http://localhost:${METABASE_INT_PORT}/api/health || exit 1
-      interval: 15s
-      timeout: 5s
-      retries: 5
     depends_on:
       - postgres
 
@@ -104,7 +70,7 @@ services:
 
 networks:
   postgres_net:
-    driver: bridge
+    name: postgres_net
 
 volumes:
   postgres_data:
