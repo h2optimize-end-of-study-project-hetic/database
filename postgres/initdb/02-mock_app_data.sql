@@ -7,10 +7,11 @@ VALUES
 ('intern@example.com', 'salt4', 'hashed_pwd4', 'intern', 'Dave', 'Intern'),
 ('guest@example.com', 'salt5', 'hashed_pwd5', 'guest', 'Eve', 'Guest');
 
-INSERT INTO "building" (name, description)
-VALUES 
-('Main Campus', 'Primary facility'),
-('Tech Wing', 'Tech-focused annex');
+
+INSERT INTO "building" (name, description, room_count, street_number, street_name, postal_code, city, country, latitude, longitude, created_at)
+VALUES
+('Bâtiment A', 'Batiment administratif', 20, '27 ter', 'Rue du Progrès', '93100', 'Montreuil', 'France', 48.851784, 2.420545, NOW()),
+('Bâtiment C', 'batiments classes', 37, '27 ter', 'Rue du Progrès', '93100', 'Montreuil', 'France', 48.851784, 2.420545, NOW());
 
 INSERT INTO "map" (building_id, file_name, path, width, length)
 VALUES 

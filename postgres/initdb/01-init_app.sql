@@ -1,6 +1,13 @@
 
 \c app;
 
+CREATE TABLE IF NOT EXISTS public.alembic_version (
+    version_num VARCHAR(32) PRIMARY KEY
+);
+
+INSERT INTO public.alembic_version (version_num)
+VALUES ('f743ab8a8305');
+
 -- ENUM rôle utilisateur
 DO $$
 BEGIN
@@ -43,9 +50,9 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION set_deleted_at()
 RETURNS TRIGGER AS $$
 BEGIN
-  IF NEW.is_deleted = TRUE AND OLD.is_deleted = FALSE THEN
+  IF NEW.is_delete = TRUE AND OLD.is_delete = FALSE THEN
     NEW.deleted_at := NOW();
-  ELSIF NEW.is_deleted = FALSE THEN
+  ELSIF NEW.is_delete = FALSE THEN
     NEW.deleted_at := NULL;
   END IF;
   RETURN NEW;
@@ -60,12 +67,12 @@ CREATE TABLE "user" (
   "salt"                TEXT NOT NULL,
   "password"            TEXT NOT NULL,
   "secret_2fa"          TEXT,
-  "role"                role,
+  "role"                role DEFAULT 'guest',
   "firstname"           TEXT NOT NULL,
   "lastname"            TEXT NOT NULL,
   "phone_number"        TEXT,
   "is_active"           BOOLEAN DEFAULT TRUE,
-  "is_deleted"          BOOLEAN DEFAULT FALSE,
+  "is_delete"           BOOLEAN DEFAULT FALSE,
   "created_at"          TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
   "updated_at"          TIMESTAMPTZ,
   "deleted_at"          TIMESTAMPTZ
@@ -76,9 +83,17 @@ CREATE TABLE "building" (
   "name"                TEXT,
   "description"         TEXT,
   "room_count"          INTEGER,
+  "street_number"       TEXT,
+  "street_name"         TEXT,
+  "postal_code"         TEXT,
+  "city"                TEXT,
+  "country"             TEXT,
+  "latitude"            DECIMAL(9,6),
+  "longitude"           DECIMAL(9,6),
   "created_at"          TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
   "updated_at"          TIMESTAMPTZ
 );
+
 
 CREATE TABLE "map" (
   "id"                  SERIAL PRIMARY KEY,
