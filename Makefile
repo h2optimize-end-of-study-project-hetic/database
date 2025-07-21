@@ -21,12 +21,10 @@ clean:
 cleanall: 
 	docker compose -v down
 
-startdwithoutmqtt:
-	docker compose --env-file $(ENV_FILE) --env-file $(ENV_LOCAL_FILE) up --build -d postgres pgadmin
-	$(MAKE) logs
-
-	
 startd :
+	@echo -e "--------"
+	@echo -e "DATABASE"
+	@echo -e "--------"
 	$(MAKE) buildd
 	$(MAKE) logs
 
@@ -34,24 +32,3 @@ restartd:
 	$(MAKE) clean
 	$(MAKE) buildd
 	$(MAKE) logs
-
-dangerrestartdalldanger:
-	$(MAKE) cleanall
-	$(MAKE) buildd
-	$(MAKE) logs
-
-
-startpga :
-	docker compose down -v pgadmin
-	docker compose --env-file $(ENV_FILE) --env-file $(ENV_LOCAL_FILE) up --build pgadmin
-
-
-
-startmqtt :
-	docker compose down mqtt
-	docker compose up --build mqtt
-
-
-starttelegraf :
-	docker compose --env-file $(ENV_FILE) --env-file $(ENV_LOCAL_FILE) up --build telegraf
-

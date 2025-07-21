@@ -21,7 +21,7 @@ services:
 
   pgadmin:
     image: dpage/pgadmin4
-    container_name: ${PGADMIN_CONTAINER_NAME:-pgamdin}
+    container_name: ${PGADMIN_CONTAINER_NAME:-pgadmin}
     restart: always
     env_file:
       - .env
@@ -39,35 +39,6 @@ services:
       postgres_net:
     depends_on:
       - postgres
-
-  telegraf:
-    image: telegraf:1.35
-    container_name: ${TELEGRAF_CONTAINER_NAME:-telegraf}
-    restart: unless-stopped
-    environment:
-      POSTGRES_HOST: postgres
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_RECORD_DB: ${POSTGRES_RECORD_DB:-recorded}
-      MQTT_HOST: ${MQTT_HOST:-176.186.143.117}
-      MQTT_PORT: ${MQTT_PORT:-8828}
-      MQTT_TOPIC: ${MQTT_TOPIC:-pws-packet/#}
-    env_file:
-      - .env
-      - .env.local
-    volumes:
-      - ./telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:ro
-    depends_on:
-      postgres:
-        condition: service_healthy
-    networks:
-      - postgres_net
-    healthcheck:
-      test: ["CMD", "telegraf", "--test"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
 networks:
   postgres_net:
     name: postgres_net
@@ -75,4 +46,3 @@ networks:
 volumes:
   postgres_data:
   pgadmin_data:
-  metabase_data: 
