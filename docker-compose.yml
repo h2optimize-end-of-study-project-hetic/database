@@ -1,13 +1,13 @@
 services:
   postgres:
     image:  timescale/timescaledb:latest-pg17
-    container_name: ${POSTGRES_CONTAINER_NAME:-postgres}
+    container_name: ${POSTGRES_HOST:-postgres}
     restart: always
     env_file:
       - .env
       - .env.local
     networks:
-      - postgres_net
+      - ${POSTGRES_NETWORK_NAME:-postgres_net}  
     ports:
       - "${POSTGRES_EXT_PORT}:5432"
     volumes:

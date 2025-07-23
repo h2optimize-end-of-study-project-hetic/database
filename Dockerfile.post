@@ -1,0 +1,5 @@
+FROM timescale/timescaledb:latest-pg17
+
+COPY ./postgres/initdb /docker-entrypoint-initdb.d
+
+CMD ["postgres"]

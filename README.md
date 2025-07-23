@@ -24,30 +24,6 @@ Restaurer les données de `recorded` :
 
 ---
 
-### ⚠️ Troubleshooting – Erreur `/entrypoint.sh: not found` dans le conteneur *watcher* sous Windows
-
-**Erreur :**
-
-```
-/bin/sh: /entrypoint.sh: not found
-```
-
-**Origine :**
-
-> Incompatibilité des **séquences de fin de ligne** entre Windows et Linux.
-
-Les systèmes utilisent des conventions différentes pour terminer les lignes dans les fichiers texte :
-
-| Système         | Séquence de fin de ligne | Représentation |
-| --------------- | ------------------------ | -------------- |
-| **Windows**     | `CRLF`                   | `\r\n`         |
-| **Linux/macOS** | `LF`                     | `\n`           |
-
-**Solution :**
-Convertir le fichier en `LF` avec VSCode :
-![Fin de ligne VSCode](./doc/image/sequence_end_line.png)
-
----
 
 ### Installation réussie lorsque :
 
@@ -61,7 +37,6 @@ postgres=# \l
    Name    | Owner | Encoding | Locale Provider |  Collate   |   Ctype    | Locale | ICU Rules | Access privileges 
 -----------+-------+----------+-----------------+------------+------------+--------+-----------+--------------------
  app       | admin | UTF8     | libc            | en_US.utf8 | en_US.utf8 |        |           | 
- metabase  | admin | UTF8     | libc            | en_US.utf8 | en_US.utf8 |        |           | 
  recorded  | admin | UTF8     | libc            | en_US.utf8 | en_US.utf8 |        |           |
 ```
 
@@ -84,15 +59,6 @@ app=# \dt
 ```
 
 ```postgres
-metabase=# \dt
-                       List of relations
- Schema |                 Name                 | Type  | Owner 
---------+--------------------------------------+-------+-------
- public | action                               | table | admin
-...
-```
-
-```postgres
 recorded=# \dt
                 List of relations
  Schema |          Name           | Type  | Owner 
@@ -108,7 +74,6 @@ recorded=# \dt
 ```
 
 3. pgAdmin est accessible et connecté aux bases de données.
-4. Metabase est accessible, sans configuration demandée, avec affichage direct de la page de connexion.
 
 ---
 
