@@ -151,7 +151,7 @@ CREATE TABLE "tag" (
   "id"                  SERIAL PRIMARY KEY,
   "name"                TEXT,
   "description"         TEXT,
-  "source_address"      TEXT UNIQUE,
+  "source_address"      TEXT UNIQUE NOT NULL,
   "created_at"          TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
   "updated_at"          TIMESTAMPTZ
 );

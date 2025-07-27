@@ -133,6 +133,7 @@ psql -U admin -d postgres
 -- Backup de recorded 
 pg_dump -U admin -d recorded --format=plain --file=/backup/recorded_backup_160720250900.sql
 
+
 pg_dump: hint: You might not be able to restore the dump without using --disable-triggers or temporarily dropping the constraints.
 ```
 
