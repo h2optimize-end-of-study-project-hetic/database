@@ -99,6 +99,7 @@ CREATE TABLE "map" (
   "id"                  SERIAL PRIMARY KEY,
   "building_id"         INTEGER,
   "file_name"           TEXT,
+  "floor"               INTEGER,
   "path"                TEXT,
   "width"               INTEGER,
   "length"              INTEGER,

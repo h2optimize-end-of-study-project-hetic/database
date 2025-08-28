@@ -13,11 +13,11 @@ VALUES
 ('Bâtiment A', 'Bâtiment administratif et de cours', 20, '27 ter', 'Rue du Progrès', '93100', 'Montreuil', 'France', 48.851784, 2.420545, NOW()),
 ('Bâtiment C', 'Bâtiment de cours', 37, '27 ter', 'Rue du Progrès', '93100', 'Montreuil', 'France', 48.851784, 2.420545, NOW());
 
-INSERT INTO "map" (building_id, file_name, path, width, length)
+INSERT INTO "map" (building_id, file_name, floor, path, width, length)
 VALUES 
-(1, 'batA_RDC.png', '/code/app/maps/batA_RDC.png', 4488, 3172),
-(1, 'batA_etg1.png', '/code/app/maps/batA_etg1.png', 4488, 3172),
-(2, 'batC_RDC.png', '/code/app/maps/batC_RDC.png', 4488, 3172);
+(1, 'batA_RDC.png', 0, '/code/app/maps/batA_RDC.png', 4488, 3172),
+(1, 'batA_etg1.png', 1, '/code/app/maps/batA_etg1.png', 4488, 3172),
+(2, 'batC_RDC.png', 0, '/code/app/maps/batC_RDC.png', 4488, 3172);
 
 INSERT INTO "room" (name, description, floor, building_id, area, shape, capacity, start_at, end_at)
 VALUES 
