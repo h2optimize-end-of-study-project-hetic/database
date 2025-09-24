@@ -136,4 +136,3 @@ pg_dump -U admin -d recorded --format=plain --file=/backup/recorded_backup_16072
 
 pg_dump: hint: You might not be able to restore the dump without using --disable-triggers or temporarily dropping the constraints.
 ```
-

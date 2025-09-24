@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS public.alembic_version (
 );
 
 INSERT INTO public.alembic_version (version_num)
-VALUES ('f743ab8a8305');
+VALUES ('ca4798a67204');
 
 -- ENUM rôle utilisateur
 DO $$
@@ -59,12 +59,33 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+CREATE OR REPLACE FUNCTION check_room_tag_overlap()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM room_tag rt
+    WHERE rt.tag_id = NEW.tag_id
+      AND rt.id <> COALESCE(NEW.id, -1)
+      AND (
+        (rt.end_at IS NULL OR NEW.start_at <= rt.end_at)
+        AND (NEW.end_at IS NULL OR rt.start_at <= NEW.end_at)
+      )
+  ) THEN
+    RAISE EXCEPTION 'Already exist';
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+
 -- === TABLES ===
 
 CREATE TABLE "user" (
   "id"                  SERIAL PRIMARY KEY,
   "email"               TEXT UNIQUE NOT NULL,
-  "salt"                TEXT NOT NULL,
+  "salt"                TEXT,
   "password"            TEXT NOT NULL,
   "secret_2fa"          TEXT,
   "role"                role DEFAULT 'guest',
@@ -251,6 +272,10 @@ CREATE TRIGGER trg_room_after_insert
 AFTER INSERT ON room
 FOR EACH ROW
 EXECUTE FUNCTION update_room_count();
+
+CREATE TRIGGER room_tag_no_overlap
+BEFORE INSERT OR UPDATE ON room_tag
+FOR EACH ROW EXECUTE FUNCTION check_room_tag_overlap();
 
 CREATE TRIGGER trg_room_after_delete
 AFTER DELETE ON room
